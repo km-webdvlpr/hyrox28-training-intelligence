@@ -74,43 +74,38 @@ npm run check
 
 ## GitHub Pages deploy
 
-This repo includes [`.github/workflows/deploy.yml](./.github/workflows/deploy.yml).
+This repo is set up for branch-based GitHub Pages publishing from `main` -> `/docs`.
 
-To publish:
-
-1. Push the repo to GitHub.
-2. In GitHub, open `Settings -> Pages`.
-3. Set the source to `GitHub Actions`.
-4. Push to `main`.
-
-The workflow builds with:
+To refresh the published site:
 
 ```bash
-VITE_BASE_PATH=/<repo-name>/
+npm install
+npm run build:pages
+git add docs
+git commit -m "Update GitHub Pages build"
+git push
 ```
 
-That keeps asset paths correct for repository-based GitHub Pages deployments.
+Then make sure the repository Pages source is:
 
-## Manual base path
-
-If you build manually for a repository subpath, copy [`.env.example`](./.env.example) to `.env` and set:
-
-```bash
-VITE_BASE_PATH=/your-repo-name/
-```
-
-For root-domain hosting, `/` is fine.
+1. `Deploy from a branch`
+2. Branch: `main`
+3. Folder: `/docs`
 
 ## GitHub Pages routing
 
-This repo includes a `404.html` redirect helper so direct links like `/history` and `/analytics` can still recover correctly on GitHub Pages.
+The build includes:
+
+- `docs/404.html` for SPA deep-link recovery
+- `docs/.nojekyll` so GitHub Pages serves the static files directly without Jekyll
 
 ## Project structure
 
 ```text
 .
-├─ .github/workflows/deploy.yml
 ├─ public/favicon.svg
+├─ public/404.html
+├─ public/.nojekyll
 ├─ src/
 │  ├─ components/
 │  ├─ context/
@@ -123,7 +118,6 @@ This repo includes a `404.html` redirect helper so direct links like `/history` 
 │  ├─ index.css
 │  └─ main.tsx
 ├─ .env.example
-├─ 404.html
 ├─ Fitness.txt
 ├─ index.html
 └─ package.json
