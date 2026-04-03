@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-shell: #f6f1e7;
+  --color-panel: #fffaf2;
+  --color-ink: #26231d;
+  --color-carbon: #12120f;
+  --color-line: #d6cfbf;
+  --color-muted: #6b685f;
+  --color-accent: #f4c400;
+  --color-accent-soft: #fff2a8;
+  --font-sans: 'Manrope', sans-serif;
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --shadow-soft: 0 18px 42px rgba(18, 18, 15, 0.08);
+}
+
+:root {
+  color: var(--color-ink);
+  background-color: var(--color-shell);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(244, 196, 0, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(255, 250, 242, 0.78), rgba(246, 241, 231, 0.96)),
+    var(--color-shell);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-grid-bg {
+  background-image:
+    linear-gradient(rgba(18, 18, 15, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 18, 15, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 95%);
+}
+
+@layer components {
+  .panel-card {
+    @apply rounded-[28px] border border-carbon bg-panel p-5 shadow-soft md:p-6;
+  }
+
+  .kpi-card {
+    @apply rounded-[28px] border border-carbon bg-panel p-5 shadow-soft md:p-6;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent);
+  }
+
+  .nav-link {
+    @apply rounded-full border border-carbon px-4 py-2 font-mono text-[11px] uppercase tracking-[0.22em] text-carbon transition;
+  }
+
+  .nav-link:hover {
+    @apply bg-carbon text-shell;
+  }
+
+  .nav-link-active {
+    @apply bg-carbon text-shell;
+  }
+
+  .status-chip {
+    @apply flex items-start gap-3 rounded-[24px] border border-carbon bg-panel px-4 py-3 shadow-soft;
+  }
+
+  .status-chip__label {
+    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-muted;
+  }
+
+  .status-chip__value {
+    @apply mt-1 text-sm font-semibold text-carbon;
+  }
+
+  .section-kicker {
+    @apply font-mono text-[11px] uppercase tracking-[0.3em] text-muted;
+  }
+
+  .page-lead {
+    @apply text-sm leading-7 text-muted md:text-[15px];
+  }
+
+  .data-label {
+    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-muted;
+  }
+
+  .metric-value {
+    @apply mt-3 font-display text-5xl uppercase tracking-tight text-carbon;
+  }
+
+  .field-shell {
+    @apply flex flex-col;
+  }
+
+  .input-shell,
+  .select-shell,
+  .textarea-shell {
+    @apply mt-3 rounded-[18px] border border-line bg-shell px-4 py-3 text-sm text-carbon outline-none transition;
+  }
+
+  .input-shell:focus,
+  .select-shell:focus,
+  .textarea-shell:focus {
+    @apply border-carbon ring-2 ring-accent/60;
+  }
+
+  .heat-0 {
+    background: linear-gradient(180deg, rgba(255, 224, 224, 0.68), rgba(255, 250, 242, 0.92));
+  }
+
+  .heat-1 {
+    background: linear-gradient(180deg, rgba(255, 241, 194, 0.72), rgba(255, 250, 242, 0.92));
+  }
+
+  .heat-2 {
+    background: linear-gradient(180deg, rgba(255, 232, 136, 0.76), rgba(255, 250, 242, 0.92));
+  }
+
+  .heat-3 {
+    background: linear-gradient(180deg, rgba(244, 196, 0, 0.8), rgba(255, 250, 242, 0.92));
+  }
+}

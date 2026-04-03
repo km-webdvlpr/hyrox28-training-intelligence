@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting...</title>
+    <script>
+      (function redirectGithubPagesDeepLink() {
+        var path = window.location.pathname.split('/').filter(Boolean)
+        var base = path.length > 0 ? '/' + path[0] + '/' : '/'
+        window.sessionStorage.setItem(
+          'hyrox28-redirect',
+          window.location.pathname + window.location.search + window.location.hash,
+        )
+        window.location.replace(window.location.origin + base)
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>
