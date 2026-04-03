@@ -4,6 +4,7 @@ import {
   format,
   isAfter,
   isBefore,
+  isSameWeek,
   parseISO,
   startOfDay,
   startOfWeek,
@@ -14,18 +15,26 @@ export interface WeeklyMetric {
   weekKey: string
   weekLabel: string
   totalWorkouts: number
+  planned: number
+  scheduled: number
+  executed: number
   completed: number
   modified: number
   skipped: number
   completionRate: number
   modifiedRate: number
   skippedRate: number
+  planCompletionRate: number
   totalDuration: number
   avgRpe: number | null
   volumeByType: Record<WorkoutType, number>
   runDistance: number
   rowDistance: number
   skiDistance: number
+  engineDistance: number
+  hyroxSimCompleted: number
+  stationLoad: number
+  wallBallReps: number
 }
 
 export interface WeekdayMetric {
@@ -39,8 +48,27 @@ export interface WeekdayMetric {
   totalDuration: number
 }
 
+export interface WeekSummary {
+  scheduled: number
+  planned: number
+  completed: number
+  modified: number
+  skipped: number
+  executed: number
+  planCompletionRate: number
+}
+
+export interface HyroxProgressSnapshot {
+  hyroxSimulationSessions: number
+  bestEngineWeekDistance: number
+  highestStationLoad: number
+  bestWallBallVolume: number
+  longestRunSessionDistance: number
+}
+
 export interface AnalyticsBundle {
   totalWorkouts: number
+  plannedWorkouts: number
   completionRate: number
   skippedRate: number
   modifiedRate: number
@@ -62,6 +90,23 @@ export interface AnalyticsBundle {
   distanceTrend: Array<{ weekLabel: string; run: number; row: number; ski: number }>
   fatigueScatter: Array<{ weekLabel: string; volume: number; rpe: number }>
   weekdayMetrics: WeekdayMetric[]
+  thisWeekSummary: WeekSummary
+  currentWeekWorkouts: WorkoutWithExercises[]
+  upcomingPlannedWorkouts: WorkoutWithExercises[]
+  planAdherenceTrend: Array<{
+    weekLabel: string
+    scheduled: number
+    planned: number
+    executed: number
+    skipped: number
+  }>
+  hyroxProgress: HyroxProgressSnapshot
+  hyroxProgressTrend: Array<{
+    weekLabel: string
+    engineDistance: number
+    hyroxSimCompleted: number
+    stationLoad: number
+  }>
 }
 
 const weekdayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -89,6 +134,33 @@ function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
+function emptyWeekSummary(): WeekSummary {
+  return {
+    scheduled: 0,
+    planned: 0,
+    completed: 0,
+    modified: 0,
+    skipped: 0,
+    executed: 0,
+    planCompletionRate: 0,
+  }
+}
+
+function isPlannedWorkout(workout: WorkoutWithExercises) {
+  return workout.status === 'planned'
+}
+
+function isStationCategory(category: string) {
+  return [
+    'strength',
+    'sled_push',
+    'sled_pull',
+    'farmer_carry',
+    'sandbag_lunge',
+    'wall_ball',
+  ].includes(category)
+}
+
 export function filterWorkoutsByDateRange(
   workouts: WorkoutWithExercises[],
   startDate?: string,
@@ -100,6 +172,8 @@ export function filterWorkoutsByDateRange(
 }
 
 export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): AnalyticsBundle {
+  const now = new Date()
+  const today = startOfDay(now)
   const ordered = [...workouts].sort((left, right) => left.date.localeCompare(right.date))
   const weeklyMap = new Map<string, WeeklyMetric & { rpeValues: number[] }>()
   const weekdayMap = new Map<string, WeekdayMetric>()
@@ -110,9 +184,14 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
   let completed = 0
   let modified = 0
   let skipped = 0
+  let plannedWorkouts = 0
   let totalRunDistance = 0
   let totalRowDistance = 0
   let totalSkiDistance = 0
+  let highestStationLoad = 0
+  let bestWallBallVolume = 0
+  let longestRunSessionDistance = 0
+  let hyroxSimulationSessions = 0
 
   for (const weekday of weekdayOrder) {
     weekdayMap.set(weekday, {
@@ -136,41 +215,61 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
     if (!weeklyMap.has(weekKey)) {
       weeklyMap.set(weekKey, {
         weekKey,
-        weekLabel: `${format(weekStart, 'dd MMM')} - ${format(endOfWeek(workoutDate, { weekStartsOn: 1 }), 'dd MMM')}`,
+        weekLabel: `${format(weekStart, 'dd MMM')} - ${format(
+          endOfWeek(workoutDate, { weekStartsOn: 1 }),
+          'dd MMM',
+        )}`,
         totalWorkouts: 0,
+        planned: 0,
+        scheduled: 0,
+        executed: 0,
         completed: 0,
         modified: 0,
         skipped: 0,
         completionRate: 0,
         modifiedRate: 0,
         skippedRate: 0,
+        planCompletionRate: 0,
         totalDuration: 0,
         avgRpe: null,
         volumeByType: blankVolumeByType(),
         runDistance: 0,
         rowDistance: 0,
         skiDistance: 0,
+        engineDistance: 0,
+        hyroxSimCompleted: 0,
+        stationLoad: 0,
+        wallBallReps: 0,
         rpeValues: [],
       })
     }
 
+    const weekEntry = weeklyMap.get(weekKey)!
+    weekEntry.scheduled += 1
+
+    if (workout.status === 'planned') {
+      plannedWorkouts += 1
+      weekEntry.planned += 1
+      continue
+    }
+
     distribution.set(workout.workout_type, (distribution.get(workout.workout_type) ?? 0) + 1)
 
-    const weekEntry = weeklyMap.get(weekKey)!
     const weekdayEntry = weekdayMap.get(weekdayKey)
-
     weekEntry.totalWorkouts += 1
     if (weekdayEntry) weekdayEntry.total += 1
 
     if (workout.status === 'completed') {
       completed += 1
       weekEntry.completed += 1
+      weekEntry.executed += 1
       if (weekdayEntry) weekdayEntry.completed += 1
     }
 
     if (workout.status === 'modified') {
       modified += 1
       weekEntry.modified += 1
+      weekEntry.executed += 1
       if (weekdayEntry) weekdayEntry.modified += 1
     }
 
@@ -192,10 +291,18 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
         averageRpeValues.push(workout.rpe)
       }
 
+      if (workout.workout_type === 'hyrox_sim') {
+        weekEntry.hyroxSimCompleted += 1
+        hyroxSimulationSessions += 1
+      }
+
+      let runDistanceForWorkout = 0
+
       for (const exercise of workout.exercises) {
         if (exercise.category === 'run' && exercise.distance_m) {
           weekEntry.runDistance += exercise.distance_m
           totalRunDistance += exercise.distance_m
+          runDistanceForWorkout += exercise.distance_m
         }
 
         if (exercise.category === 'row' && exercise.distance_m) {
@@ -207,8 +314,23 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
           weekEntry.skiDistance += exercise.distance_m
           totalSkiDistance += exercise.distance_m
         }
+
+        if (exercise.weight_kg && isStationCategory(exercise.category)) {
+          highestStationLoad = Math.max(highestStationLoad, exercise.weight_kg)
+          weekEntry.stationLoad = Math.max(weekEntry.stationLoad, exercise.weight_kg)
+        }
+
+        if (exercise.category === 'wall_ball') {
+          const wallBallVolume = (exercise.sets ?? 1) * (exercise.reps ?? 0)
+          bestWallBallVolume = Math.max(bestWallBallVolume, wallBallVolume)
+          weekEntry.wallBallReps = Math.max(weekEntry.wallBallReps, wallBallVolume)
+        }
       }
+
+      longestRunSessionDistance = Math.max(longestRunSessionDistance, runDistanceForWorkout)
     }
+
+    weekEntry.engineDistance = weekEntry.runDistance + weekEntry.rowDistance + weekEntry.skiDistance
   }
 
   const weeklyMetrics = [...weeklyMap.values()].map((week) => ({
@@ -216,6 +338,7 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
     completionRate: week.totalWorkouts ? (week.completed / week.totalWorkouts) * 100 : 0,
     modifiedRate: week.totalWorkouts ? (week.modified / week.totalWorkouts) * 100 : 0,
     skippedRate: week.totalWorkouts ? (week.skipped / week.totalWorkouts) * 100 : 0,
+    planCompletionRate: week.scheduled ? (week.executed / week.scheduled) * 100 : 0,
     avgRpe: average(week.rpeValues),
   }))
 
@@ -231,18 +354,25 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
     value,
   }))
 
-  const totalWorkouts = ordered.length
+  const actualWorkouts = ordered.filter((workout) => !isPlannedWorkout(workout))
+  const totalWorkouts = actualWorkouts.length
   const completionRate = totalWorkouts ? (completed / totalWorkouts) * 100 : 0
   const skippedRate = totalWorkouts ? (skipped / totalWorkouts) * 100 : 0
   const modifiedRate = totalWorkouts ? (modified / totalWorkouts) * 100 : 0
 
   let currentStreak = 0
-  for (const workout of [...ordered].sort((left, right) => right.date.localeCompare(left.date))) {
+  for (const workout of [...actualWorkouts].sort((left, right) => right.date.localeCompare(left.date))) {
     if (workout.status === 'skipped') break
     currentStreak += 1
   }
 
-  const latestWeek = weeklyMetrics.at(-1) ?? null
+  const currentWeekMetric =
+    weeklyMetrics.find((week) =>
+      isSameWeek(parseISO(week.weekKey), now, {
+        weekStartsOn: 1,
+      }),
+    ) ?? null
+
   const highestVolumeWeek =
     weeklyMetrics.reduce<WeeklyMetric | null>((best, week) => {
       if (!best || week.totalDuration > best.totalDuration) return week
@@ -267,13 +397,23 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
     if (recentAverage - previousAverage < -0.35) rpeTrendDirection = 'falling'
   }
 
+  const currentWeekWorkouts = workouts
+    .filter((workout) => isSameWeek(parseISO(workout.date), now, { weekStartsOn: 1 }))
+    .sort((left, right) => left.date.localeCompare(right.date))
+
+  const upcomingPlannedWorkouts = workouts
+    .filter((workout) => workout.status === 'planned' && parseISO(workout.date) >= today)
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .slice(0, 6)
+
   return {
     totalWorkouts,
+    plannedWorkouts,
     completionRate,
     skippedRate,
     modifiedRate,
     currentStreak,
-    weeklyVolume: latestWeek?.totalDuration ?? 0,
+    weeklyVolume: currentWeekMetric?.totalDuration ?? 0,
     averageRpe: average(averageRpeValues),
     totalDistance: totalRunDistance + totalRowDistance + totalSkiDistance,
     totalRunDistance,
@@ -317,5 +457,39 @@ export function buildAnalyticsBundle(workouts: WorkoutWithExercises[]): Analytic
         rpe: Number(week.avgRpe!.toFixed(2)),
       })),
     weekdayMetrics,
+    thisWeekSummary: currentWeekMetric
+      ? {
+          scheduled: currentWeekMetric.scheduled,
+          planned: currentWeekMetric.planned,
+          completed: currentWeekMetric.completed,
+          modified: currentWeekMetric.modified,
+          skipped: currentWeekMetric.skipped,
+          executed: currentWeekMetric.executed,
+          planCompletionRate: currentWeekMetric.planCompletionRate,
+        }
+      : emptyWeekSummary(),
+    currentWeekWorkouts,
+    upcomingPlannedWorkouts,
+    planAdherenceTrend: weeklyMetrics.map((week) => ({
+      weekLabel: week.weekLabel,
+      scheduled: week.scheduled,
+      planned: week.planned,
+      executed: week.executed,
+      skipped: week.skipped,
+    })),
+    hyroxProgress: {
+      hyroxSimulationSessions,
+      bestEngineWeekDistance:
+        weeklyMetrics.reduce((best, week) => Math.max(best, week.engineDistance), 0) ?? 0,
+      highestStationLoad,
+      bestWallBallVolume,
+      longestRunSessionDistance,
+    },
+    hyroxProgressTrend: weeklyMetrics.map((week) => ({
+      weekLabel: week.weekLabel,
+      engineDistance: week.engineDistance,
+      hyroxSimCompleted: week.hyroxSimCompleted,
+      stationLoad: week.stationLoad,
+    })),
   }
 }

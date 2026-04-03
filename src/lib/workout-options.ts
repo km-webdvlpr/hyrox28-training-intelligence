@@ -11,6 +11,7 @@ export const workoutTypeLabels: Record<WorkoutType, string> = {
 }
 
 export const workoutStatusLabels: Record<WorkoutStatus, string> = {
+  planned: 'Planned',
   completed: 'Completed',
   modified: 'Modified',
   skipped: 'Skipped',

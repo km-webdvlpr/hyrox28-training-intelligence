@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { addWorkoutWithExercises, listWorkoutsWithExercises } from '../data/db.ts'
+import {
+  addWorkoutWithExercises,
+  listWorkoutsWithExercises,
+  updateWorkoutWithExercises,
+} from '../data/db.ts'
 import { buildAnalyticsBundle } from '../lib/analytics.ts'
 import { WorkoutDataContext } from './workout-data-context.ts'
 import type { WorkoutDraft, WorkoutWithExercises } from '../types/workouts.ts'
@@ -30,10 +34,14 @@ export function WorkoutDataProvider({ children }: { children: ReactNode }) {
     void reload()
   }, [])
 
-  const addWorkout = async (draft: WorkoutDraft) => {
+  const saveWorkout = async (draft: WorkoutDraft, workoutId?: string) => {
     try {
       setError(null)
-      await addWorkoutWithExercises(draft)
+      if (workoutId) {
+        await updateWorkoutWithExercises(workoutId, draft)
+      } else {
+        await addWorkoutWithExercises(draft)
+      }
       const nextWorkouts = await listWorkoutsWithExercises()
       setWorkouts(nextWorkouts)
     } catch (caughtError) {
@@ -52,7 +60,7 @@ export function WorkoutDataProvider({ children }: { children: ReactNode }) {
       analytics: workouts.length ? analytics : fallbackAnalytics,
       isLoading,
       error,
-      addWorkout,
+      saveWorkout,
       reload,
     }),
     [analytics, error, isLoading, workouts],

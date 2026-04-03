@@ -8,7 +8,7 @@ export const workoutTypes = [
   'mixed',
 ] as const
 
-export const workoutStatuses = ['completed', 'modified', 'skipped'] as const
+export const workoutStatuses = ['planned', 'completed', 'modified', 'skipped'] as const
 
 export const exerciseCategories = [
   'run',

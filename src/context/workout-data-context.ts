@@ -7,7 +7,7 @@ export interface WorkoutDataContextValue {
   analytics: AnalyticsBundle
   isLoading: boolean
   error: string | null
-  addWorkout: (draft: WorkoutDraft) => Promise<void>
+  saveWorkout: (draft: WorkoutDraft, workoutId?: string) => Promise<void>
   reload: () => Promise<void>
 }
 

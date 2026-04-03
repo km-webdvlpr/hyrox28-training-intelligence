@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { addDays, format, parseISO } from 'date-fns'
-import { startTransition, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   useFieldArray,
   useForm,
@@ -11,7 +11,6 @@ import {
   type UseFormRegister,
   type UseFormSetValue,
 } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useWorkoutData } from '../hooks/use-workout-data.ts'
 import { cn } from '../lib/cn.ts'
@@ -80,6 +79,14 @@ const workoutFormSchema = z
     exercises: z.array(exerciseSchema).min(1, 'Add at least one exercise row.'),
   })
   .superRefine((value, ctx) => {
+    if (value.status === 'planned' && value.rpe !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['rpe'],
+        message: 'Planned sessions should not carry an RPE yet.',
+      })
+    }
+
     if (value.status === 'skipped' && value.duration_minutes !== 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -97,6 +104,7 @@ const workoutFormSchema = z
     }
 
     if (value.status !== 'skipped' && value.duration_minutes <= 0) {
+      if (value.status === 'planned') return
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['duration_minutes'],
@@ -318,26 +326,43 @@ function ExerciseRowFields({
   )
 }
 
-export function WorkoutForm() {
-  const navigate = useNavigate()
-  const { addWorkout } = useWorkoutData()
+function createBaseDefaults(): WorkoutFormValues {
+  return {
+    date: format(new Date(), 'yyyy-MM-dd'),
+    program_block: 'Race Specific',
+    program_week: 10,
+    program_day: format(new Date(), 'EEE'),
+    title: '',
+    workout_type: 'hyrox_sim',
+    status: 'completed',
+    duration_minutes: 60,
+    rpe: 7,
+    notes: '',
+    exercises: [createExerciseRow()],
+  }
+}
+
+interface WorkoutFormProps {
+  initialDraft?: WorkoutFormValues
+  workoutId?: string | null
+  onSaved?: () => void
+  saveLabel?: string
+}
+
+export function WorkoutForm({
+  initialDraft,
+  workoutId,
+  onSaved,
+  saveLabel,
+}: WorkoutFormProps) {
+  const { saveWorkout } = useWorkoutData()
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+  const defaultValues = initialDraft ?? createBaseDefaults()
 
   const form = useForm<WorkoutFormValues>({
     resolver: zodResolver(workoutFormSchema),
-    defaultValues: {
-      date: format(new Date(), 'yyyy-MM-dd'),
-      program_block: 'Race Specific',
-      program_week: 10,
-      program_day: format(new Date(), 'EEE'),
-      title: '',
-      workout_type: 'hyrox_sim',
-      status: 'completed',
-      duration_minutes: 60,
-      rpe: 7,
-      notes: '',
-      exercises: [createExerciseRow()],
-    },
+    defaultValues,
   })
 
   const { control, formState, handleSubmit, register, reset, setValue } = form
@@ -347,6 +372,9 @@ export function WorkoutForm() {
   useEffect(() => {
     if (status === 'skipped') {
       setValue('duration_minutes', 0)
+      setValue('rpe', null)
+    }
+    if (status === 'planned') {
       setValue('rpe', null)
     }
   }, [setValue, status])
@@ -359,7 +387,8 @@ export function WorkoutForm() {
   const onSubmit = handleSubmit(async (values) => {
     try {
       setSubmitError(null)
-      await addWorkout(values)
+      setSubmitSuccess(null)
+      await saveWorkout(values, workoutId ?? undefined)
 
       reset({
         date: format(addDays(parseISO(values.date), 1), 'yyyy-MM-dd'),
@@ -367,17 +396,18 @@ export function WorkoutForm() {
         program_week: values.program_week,
         program_day: format(addDays(parseISO(values.date), 1), 'EEE'),
         title: '',
-        workout_type: values.workout_type,
+        workout_type: initialDraft?.workout_type ?? values.workout_type,
         status: 'completed',
         duration_minutes: 60,
         rpe: 7,
         notes: '',
-        exercises: [createExerciseRow(values.workout_type === 'strength' ? 'strength' : 'run')],
+        exercises: [createExerciseRow(initialDraft?.workout_type === 'strength' ? 'strength' : 'run')],
       })
 
-      startTransition(() => {
-        navigate('/history')
-      })
+      setSubmitSuccess(
+        workoutId ? 'Planned workout updated and saved.' : `Saved ${values.title} successfully.`,
+      )
+      onSaved?.()
     } catch (caughtError) {
       setSubmitError(
         caughtError instanceof Error ? caughtError.message : 'Unable to save this workout.',
@@ -518,16 +548,22 @@ export function WorkoutForm() {
         </div>
       ) : null}
 
+      {submitSuccess ? (
+        <div className="rounded-3xl border border-carbon bg-accent-soft px-4 py-3 text-sm text-carbon">
+          {submitSuccess}
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
-          Saves locally in your browser and updates the analytics views immediately.
+          Saves locally in your browser and updates the dashboard and analytics immediately.
         </p>
         <button
           type="submit"
           className="rounded-full border border-carbon bg-carbon px-5 py-3 font-mono text-[11px] uppercase tracking-[0.22em] text-shell transition hover:-translate-y-0.5 hover:bg-carbon/90 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Saving session...' : 'Save workout'}
+          {isSubmitting ? 'Saving session...' : saveLabel ?? (workoutId ? 'Update workout' : 'Save workout')}
         </button>
       </div>
     </form>

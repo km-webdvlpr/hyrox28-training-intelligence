@@ -4,6 +4,7 @@ import type { WorkoutWithExercises } from '../types/workouts.ts'
 import { cn } from '../lib/cn.ts'
 
 function statusChipClass(status: WorkoutWithExercises['status']) {
+  if (status === 'planned') return 'bg-[#efe7d8] text-[#3f3a31]'
   if (status === 'completed') return 'bg-[#e7f5ec] text-[#0f5132]'
   if (status === 'modified') return 'bg-[#fff4d1] text-[#7a5b00]'
   return 'bg-[#ffe0e0] text-[#8f1d1d]'

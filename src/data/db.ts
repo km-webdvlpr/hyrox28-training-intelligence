@@ -146,3 +146,57 @@ export async function addWorkoutWithExercises(draft: WorkoutDraft) {
     exercises,
   }
 }
+
+export async function updateWorkoutWithExercises(workoutId: string, draft: WorkoutDraft) {
+  const db = await getDb()
+  const tx = db.transaction(['workouts', 'workout_exercises'], 'readwrite')
+  const workoutStore = tx.objectStore('workouts')
+  const existingWorkout = await workoutStore.get(workoutId)
+
+  if (!existingWorkout) {
+    throw new Error('The workout you tried to update no longer exists.')
+  }
+
+  const timestamp = new Date().toISOString()
+  const updatedWorkout: Workout = {
+    ...existingWorkout,
+    date: draft.date,
+    program_block: draft.program_block,
+    program_week: draft.program_week,
+    program_day: draft.program_day,
+    title: draft.title,
+    workout_type: draft.workout_type,
+    status: draft.status,
+    duration_minutes: draft.duration_minutes,
+    rpe: draft.rpe,
+    notes: draft.notes,
+    updated_at: timestamp,
+  }
+
+  const exerciseStore = tx.objectStore('workout_exercises')
+  const existingKeys = await exerciseStore.index('by-workout-id').getAllKeys(workoutId)
+  await Promise.all(existingKeys.map((key) => exerciseStore.delete(key)))
+
+  const exercises: WorkoutExercise[] = draft.exercises.map((exercise) => ({
+    id: crypto.randomUUID(),
+    workout_id: workoutId,
+    exercise_name: exercise.exercise_name,
+    category: exercise.category,
+    sets: exercise.sets,
+    reps: exercise.reps,
+    weight_kg: exercise.weight_kg,
+    distance_m: exercise.distance_m,
+    time_seconds: exercise.time_seconds,
+    calories: exercise.calories,
+    notes: exercise.notes,
+  }))
+
+  await workoutStore.put(updatedWorkout)
+  await Promise.all(exercises.map((exercise) => exerciseStore.put(exercise)))
+  await tx.done
+
+  return {
+    ...updatedWorkout,
+    exercises,
+  }
+}

@@ -380,7 +380,7 @@ export function createSeedData(): SeedBundle {
   const workouts: Workout[] = []
   const exercises: WorkoutExercise[] = []
   const thisWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
-  const firstWeekStart = subWeeks(thisWeekStart, 9)
+  const firstWeekStart = subWeeks(thisWeekStart, 10)
 
   for (let weekIndex = 0; weekIndex < 10; weekIndex += 1) {
     const programWeek = weekIndex + 1
