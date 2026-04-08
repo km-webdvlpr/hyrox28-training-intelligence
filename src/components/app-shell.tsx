@@ -19,13 +19,13 @@ export function AppShell() {
     <div className="min-h-screen bg-shell text-ink">
       <div className="app-grid-bg pointer-events-none fixed inset-0 -z-10 opacity-60" />
 
-      <header className="sticky top-0 z-40 border-b border-line/80 bg-shell/90 backdrop-blur">
+      <header className="relative z-40 border-b border-line/80 bg-shell/95 md:sticky md:top-0 md:backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
               <div className="section-kicker">Hyrox28 // Training Intelligence</div>
               <div className="flex flex-wrap items-end gap-3">
-                <h1 className="font-display text-5xl uppercase tracking-tight text-carbon sm:text-6xl">
+                <h1 className="font-display text-4xl uppercase tracking-tight text-carbon sm:text-5xl lg:text-6xl">
                   Race Ops Board
                 </h1>
                 <span className="rounded-full border border-carbon bg-accent px-3 py-1 font-mono text-[11px] uppercase tracking-[0.28em] text-carbon">
@@ -38,14 +38,14 @@ export function AppShell() {
               </p>
             </div>
 
-            <nav className="flex flex-wrap gap-2" aria-label="Primary">
+            <nav className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap" aria-label="Primary">
               {navigation.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.to === '/'}
                   className={({ isActive }) =>
-                    cn('nav-link', isActive && 'nav-link-active')
+                    cn('nav-link justify-center text-center', isActive && 'nav-link-active')
                   }
                 >
                   {item.label}
