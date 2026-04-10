@@ -1,137 +1,141 @@
-# Hyrox28 Training Intelligence
+# Cadence
 
-Local-first Hyrox performance tracking and analytics built with React, TypeScript, Vite, Tailwind CSS, Recharts, and IndexedDB.
+Cadence is a local-first execution intelligence app built with React, TypeScript, Vite, and IndexedDB.
 
-## What it is
+## What this build is
 
-Hyrox28 Training Intelligence is a single-user training log and analytics app for Hyrox-style programming. It opens straight to the dashboard, runs without authentication, and stores data in the browser with IndexedDB instead of Supabase.
+Cadence helps a single user:
+- define repeatable habits
+- launch simple routines
+- log actual outcomes quickly
+- review the gap between plan and reality
+- queue basic in-app reminders tied to scheduled instances
 
-The visual direction is intentionally bright and high-contrast:
-- warm paper background
-- carbon black surfaces and typography
-- signal yellow accents
-- mono labels with a race-ops / telemetry feel
+## What this build is not yet
 
-## Core features
+This repository is deployable as a static app, but the runtime is still local-only.
 
-- Dashboard with KPI cards and six trend charts
-- Dynamic workout log form using `react-hook-form` and `zod`
-- Conditional exercise inputs by movement category
-- Filterable workout history
-- Deep-dive analytics page with time-window controls
-- Realistic 10-week seeded dataset on first load
-- GitHub Pages deployment workflow included
+That means:
+- data lives in IndexedDB in one browser profile
+- there is no backend persistence
+- there is no auth
+- there is no cross-device sync
+- reminders are browser-session dependent
 
-## Stack
+Use the current hosted build as a serious demo or local-first MVP preview, not as a durable multi-user production system.
 
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS v4
-- React Router v6
-- React Hook Form
-- Zod
-- date-fns
-- Recharts
-- clsx + tailwind-merge
-- idb
+## Recommended local folder name
 
-## Data storage
+Use one of these when you rename the workspace directory:
+- `Cadence App`
+- `cadence-execution-intelligence`
 
-The app uses IndexedDB through `idb`.
+The current `Hyrox App` folder path is legacy naming only and should be cleaned once the directory is no longer locked by external tools.
 
-- No backend required
-- No API keys required
-- No auth required
-- Data persists in the browser on the current device
-
-Important:
-- seeded demo data is created automatically when the database is empty
-- browser storage clearing will remove local data
-- this version does not sync across devices
-
-## Run locally
+## Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local Vite URL shown in the terminal.
+## Local production preview
+
+```bash
+npm run build
+npm run preview
+```
+
+## Deploy readiness gate
+
+```bash
+npm run test:smoke
+```
+
+This runs:
+- lint
+- production build
+- Playwright end-to-end smoke coverage
+
+## Environment variables
+
+See `.env.example`.
+
+Current variables:
+- `VITE_APP_TITLE`
+- `VITE_BASE_PATH`
+
+Notes:
+- leave `VITE_BASE_PATH` empty for local development and root hosting
+- use `VITE_BASE_PATH=/cadence/` for the GitHub Pages deployment target
+
+## Deployment target recommendation
+
+Recommended first host:
+- GitHub Pages
+
+Good alternatives:
+- Vercel
+- Netlify
+- Cloudflare Pages
+
+Why:
+- the app is frontend-only today
+- static deployment is enough for the current runtime
+- GitHub Pages can host it fully free
+- the existing `build:pages` path is aligned to the `/cadence/` deploy target
+
+## Live review URL
+
+Use this URL for post-deploy human review once the GitHub Pages site is publishing with the Cadence path:
+
+`https://km-webdvlpr.github.io/cadence/`
+
+## Persistence and deployment implications
+
+What is local-only:
+- all user data
+- reminder queue state
+- review history
+- everything is stored in the browser via IndexedDB
+
+What is deploy-ready:
+- static asset hosting
+- client-side routing
+- local browser persistence
+- in-app reminder surfacing
+
+What is still needed before a true live product:
+1. backend database
+2. auth
+3. sync model
+4. export/import or migration path
+5. server-driven reminders
+
+Those are future upgrades, not blockers for the current GitHub Pages-hosted demo build.
 
 ## Quality checks
 
 ```bash
 npm run lint
 npm run build
+npm run test:e2e
 ```
 
-Or run both:
+For deploy candidates, prefer:
 
 ```bash
-npm run check
+npm run test:smoke
 ```
 
-## GitHub Pages deploy
+## Additional docs
 
-This repo is set up for branch-based GitHub Pages publishing from `main` -> `/docs`.
+- [DEPLOYMENT.md](./DEPLOYMENT.md)
+- [PRODUCTION_SMOKE_CHECKLIST.md](./PRODUCTION_SMOKE_CHECKLIST.md)
 
-To refresh the published site:
+## MVP notes carried forward
 
-```bash
-npm install
-npm run build:pages
-git add docs
-git commit -m "Update GitHub Pages build"
-git push
-```
-
-Then make sure the repository Pages source is:
-
-1. `Deploy from a branch`
-2. Branch: `main`
-3. Folder: `/docs`
-
-## GitHub Pages routing
-
-The build includes:
-
-- `docs/404.html` for SPA deep-link recovery
-- `docs/.nojekyll` so GitHub Pages serves the static files directly without Jekyll
-
-## Project structure
-
-```text
-.
-├─ public/favicon.svg
-├─ public/404.html
-├─ public/.nojekyll
-├─ src/
-│  ├─ components/
-│  ├─ context/
-│  ├─ data/
-│  ├─ hooks/
-│  ├─ lib/
-│  ├─ pages/
-│  ├─ types/
-│  ├─ App.tsx
-│  ├─ index.css
-│  └─ main.tsx
-├─ .env.example
-├─ Fitness.txt
-├─ index.html
-└─ package.json
-```
-
-## Main data files
-
-- `src/data/db.ts`: IndexedDB setup and persistence helpers
-- `src/data/seed.ts`: realistic seeded workout and exercise data
-- `src/lib/analytics.ts`: workout summaries, weekly trends, adherence logic, and chart-ready transforms
-- `src/components/workout-form.tsx`: dynamic logging form
-
-## If you want cloud sync later
-
-The clean extension point is `src/data/db.ts`.
-
-That lets you keep the current UI and analytics layer while swapping the persistence implementation later for something like Turso or Cloudflare D1 behind a protected API.
+- pause/archive prunes future planned instances as an intentional MVP simplification
+- weighted partials remain part of weekly review semantics
+- moved instances are excluded from adherence denominators
+- timezone updates reschedule queued reminders without changing product semantics

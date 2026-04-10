@@ -1,23 +1,26 @@
 import type { ReactNode } from 'react'
 
-interface PageHeaderProps {
-  kicker: string
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+}: {
+  eyebrow: string
   title: string
   description: string
   actions?: ReactNode
-}
-
-export function PageHeader({ kicker, title, description, actions }: PageHeaderProps) {
+}) {
   return (
-    <section className="mb-8 grid gap-5 rounded-[28px] border border-carbon bg-panel px-5 py-6 shadow-soft md:grid-cols-[1fr_auto] md:px-7">
-      <div className="space-y-3">
-        <div className="section-kicker">{kicker}</div>
-        <h2 className="font-display text-4xl uppercase tracking-tight text-carbon sm:text-5xl">
+    <section className="flex flex-col gap-4 rounded-[28px] border border-slate-900/10 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur md:flex-row md:items-end md:justify-between md:p-6">
+      <div className="max-w-2xl">
+        <div className="eyebrow">{eyebrow}</div>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
           {title}
-        </h2>
-        <p className="page-lead max-w-2xl">{description}</p>
+        </h1>
+        <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600">{description}</p>
       </div>
-      {actions ? <div className="flex items-start justify-start md:justify-end">{actions}</div> : null}
+      {actions ? <div className="md:min-w-[220px]">{actions}</div> : null}
     </section>
   )
 }

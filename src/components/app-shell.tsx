@@ -1,109 +1,82 @@
-import { Database, Flame, Gauge, PlusSquare } from 'lucide-react'
+import { CalendarDays, CheckSquare2, Cog, Layers3, LineChart } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { useWorkoutData } from '../hooks/use-workout-data.ts'
-import { formatDuration, pluralize } from '../lib/formatters.ts'
+import { useAppData } from '../hooks/use-app-data.ts'
 import { cn } from '../lib/cn.ts'
 
 const navigation = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/log', label: 'Log Workout' },
-  { to: '/history', label: 'History' },
-  { to: '/analytics', label: 'Analytics' },
+  { to: '/today', label: 'Today', icon: CheckSquare2 },
+  { to: '/habits', label: 'Habits', icon: CalendarDays },
+  { to: '/routines', label: 'Routines', icon: Layers3 },
+  { to: '/review', label: 'Review', icon: LineChart },
+  { to: '/settings', label: 'Settings', icon: Cog },
 ]
 
 export function AppShell() {
-  const { workouts, analytics } = useWorkoutData()
-  const latestWorkout = workouts[0]
+  const { weeklyReview, habits, todayItems } = useAppData()
 
   return (
-    <div className="min-h-screen bg-shell text-ink">
-      <div className="app-grid-bg pointer-events-none fixed inset-0 -z-10 opacity-60" />
-
-      <header className="relative z-40 border-b border-line/80 bg-shell/95 md:sticky md:top-0 md:backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl space-y-3">
-              <div className="section-kicker">Hyrox28 // Training Intelligence</div>
-              <div className="flex flex-wrap items-end gap-3">
-                <h1 className="font-display text-4xl uppercase tracking-tight text-carbon sm:text-5xl lg:text-6xl">
-                  Race Ops Board
-                </h1>
-                <span className="rounded-full border border-carbon bg-accent px-3 py-1 font-mono text-[11px] uppercase tracking-[0.28em] text-carbon">
-                  Local First
-                </span>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(29,78,216,0.08),_transparent_26%),linear-gradient(180deg,#f7f8fb_0%,#eef1f7_100%)] text-slate-900">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="eyebrow">Execution intelligence</div>
+              <div className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+                Cadence
               </div>
-              <p className="page-lead max-w-xl">
-                Personal Hyrox tracking with bright race-day energy, clean signal, and no
-                bloated SaaS styling.
-              </p>
+              <div className="mt-1 text-sm text-slate-600">
+                Planned vs actual, kept honest.
+              </div>
             </div>
 
-            <nav className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap" aria-label="Primary">
-              {navigation.map((item) => (
+            <div className="grid grid-cols-2 gap-3 md:flex">
+              <div className="status-chip">
+                <span className="status-chip__label">Active habits</span>
+                <span className="status-chip__value">
+                  {habits.filter((habit) => habit.state === 'active').length}
+                </span>
+              </div>
+              <div className="status-chip">
+                <span className="status-chip__label">Today planned</span>
+                <span className="status-chip__value">{todayItems.length}</span>
+              </div>
+              <div className="status-chip">
+                <span className="status-chip__label">Week complete</span>
+                <span className="status-chip__value">
+                  {Math.round(weeklyReview.completionRate * 100)}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <nav className="mt-4 grid grid-cols-2 gap-2 sm:flex" aria-label="Primary">
+            {navigation.map((item) => {
+              const Icon = item.icon
+              return (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to === '/'}
                   className={({ isActive }) =>
-                    cn('nav-link justify-center text-center', isActive && 'nav-link-active')
+                    cn(
+                      'inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition',
+                      isActive
+                        ? 'border-slate-950 bg-slate-950 text-white'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-950 hover:text-slate-950',
+                    )
                   }
                 >
+                  <Icon className="h-4 w-4" />
                   {item.label}
                 </NavLink>
-              ))}
-            </nav>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="status-chip">
-              <Database className="h-4 w-4" />
-              <div>
-                <div className="status-chip__label">Data mode</div>
-                <div className="status-chip__value">IndexedDB session vault</div>
-              </div>
-            </div>
-
-            <div className="status-chip">
-              <PlusSquare className="h-4 w-4" />
-              <div>
-                <div className="status-chip__label">Latest block</div>
-                <div className="status-chip__value">
-                  {latestWorkout?.program_block ?? 'Seed data loading'}
-                </div>
-              </div>
-            </div>
-
-            <div className="status-chip">
-              <Flame className="h-4 w-4" />
-              <div>
-                <div className="status-chip__label">Current streak</div>
-                <div className="status-chip__value">
-                  {pluralize(analytics.currentStreak, 'session')}
-                </div>
-              </div>
-            </div>
-
-            <div className="status-chip">
-              <Gauge className="h-4 w-4" />
-              <div>
-                <div className="status-chip__label">This week</div>
-                <div className="status-chip__value">{formatDuration(analytics.weeklyVolume)}</div>
-              </div>
-            </div>
-          </div>
+              )
+            })}
+          </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
+      <main className="mx-auto max-w-6xl px-4 py-6 md:py-8">
         <Outlet />
       </main>
-
-      <footer className="border-t border-carbon bg-carbon text-shell">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-shell/80 md:flex-row md:items-center md:justify-between md:px-6">
-          <span>Signal clean // dashboard live // single-user mode</span>
-          <span>Built for GitHub Pages // browser data persists locally</span>
-        </div>
-      </footer>
     </div>
   )
 }
