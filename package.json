@@ -1,15 +1,17 @@
 {
-  "name": "hyrox28-training-intelligence",
+  "name": "cadence-execution-intelligence",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:pages": "tsc -b && cross-env VITE_BASE_PATH=/hyrox28-training-intelligence/ vite build --outDir docs",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "check": "npm run lint && npm run build"
+    "dev": "npx vite",
+    "build": "npx tsc -b && npx vite build",
+    "build:pages": "npx cross-env VITE_BASE_PATH=/cadence/ npx vite build --outDir docs",
+    "lint": "npx eslint .",
+    "preview": "npx vite preview",
+    "check": "npm run lint && npm run build",
+    "test:e2e": "npx playwright test --workers=1",
+    "test:smoke": "npm run check && npm run test:e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
